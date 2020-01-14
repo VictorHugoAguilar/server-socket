@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import Server from '../class/Server';
+import { Socket } from 'socket.io';
+import { usuariosConectados } from '../sockets/socket';
 
 
 const router = Router();
@@ -69,6 +71,40 @@ router.post('/mensajes/:id', (req: Request, res: Response) => {
         id
     });
 });
+
+// Servicios para obtener todos los IDS de los usuarios
+router.get('/usuarios', (req: Request, res: Response) => {
+
+    // obtenemos una instancia del servidor
+    const server = Server.instance;
+
+    server.io.clients( (err: any, clientes: string[]) => {
+        
+        if(err){
+            return res.json({
+                ok: false,
+                message: err
+            });
+        }
+
+        res.json({
+            ok: true,
+            clientes: clientes
+        });
+
+    } );
+})
+
+
+// Obtener usuarios y sus nombre
+router.get('/usuarios/detalle', (req: Request, res: Response) => {
+
+        res.json({
+        ok: true,
+        clientes: usuariosConectados.getLista()
+    });
+
+})
 
 // Exportamos la constante para poder utilizarla importandola cuando se necesite
 export default router;

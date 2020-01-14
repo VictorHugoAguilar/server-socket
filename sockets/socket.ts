@@ -4,24 +4,33 @@ import { UsuariosLista } from '../class/usuarios-lista';
 import { Usuario } from '../class/usuario';
 
 // exportar usuarios conectados  
-export const usariosConectados = new UsuariosLista();
+export const usuariosConectados = new UsuariosLista();
 
 // logica para desconectar un cliente
-export const desconectar = (cliente: Socket) => {
+export const desconectar = (cliente: Socket, io: socketIO.Server) => {
 
     cliente.on('disconnect', () => {
         console.log('Cliente desconectado... ', cliente.id);
         // eliminamos el usuario que se ha desconectado
-        usariosConectados.deleteUsuario(cliente.id);
+        usuariosConectados
+            .deleteUsuario(cliente.id);
+
+        // modificar el estado de la lista de usuario
+        io.emit('usuarios-activos', usuariosConectados
+            .getLista())
+
     })
 }
 
 // conectar cliente
-export const conectarCliente = (cliente: Socket) => {
+export const conectarCliente = (cliente: Socket, io: socketIO.Server) => {
 
     // creamos una instancia de un usuario
     const usuario = new Usuario(cliente.id);
-    usariosConectados.agregar(usuario);
+    usuariosConectados
+        .agregar(usuario);
+
+
 
 }
 
@@ -45,12 +54,32 @@ export const usuarioLogin = (cliente: Socket, io: socketIO.Server) => {
         // console.log('Usuario configurando', payload.nombre);
 
         // Actualizar datos de usuario
-        usariosConectados.actualizarUsuario(cliente.id, payload.nombre);
+        usuariosConectados
+            .actualizarUsuario(cliente.id, payload.nombre);
+
+        // modificar el estado de la lista de usuario
+        io.emit('usuarios-activos', usuariosConectados.getLista())
 
         callback({
             Ok: true,
             message: `Usuario ${payload.nombre}, configurado.`
         });
+
+    });
+}
+
+
+// Creamos un metodo para obtener usuarios
+export const getUsuarios = (cliente: Socket, io: socketIO.Server) => {
+
+    cliente.on('obtener-usuarios', () => {
+
+        /*
+            modificar el estado de la lista de usuario
+            utilizando io.to( cliente.id ) es para solo
+            emitirlo a la persona que acaba de entrar al chat
+        */
+        io.to(cliente.id).emit('usuarios-activos', usuariosConectados.getLista())
 
     });
 }
